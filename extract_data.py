@@ -3,21 +3,62 @@ import sqlite3
 import pandas as pd
 from web3 import Web3
 
-# 1. Connect to Public RPC Node
-RPC_URL = "https://ethereum-rpc.publicnode.com"
-w3 = Web3(Web3.HTTPProvider(RPC_URL))
+# ------------------------------------------------------------------
+# 1. RPC CONNECTION & CONFIGURATION
+# ------------------------------------------------------------------
+RPC_URLS = [
+    "https://1rpc.io/eth",
+    "https://rpc.ankr.com/eth",
+    "https://ethereum-rpc.publicnode.com"
+]
+
+def get_web3_connection():
+    for url in RPC_URLS:
+        try:
+            w3 = Web3(Web3.HTTPProvider(url, request_kwargs={'timeout': 10}))
+            if w3.is_connected():
+                print(f"Connected to RPC: {url}")
+                return w3
+        except Exception:
+            continue
+    raise ConnectionError("Could not connect to any RPC node.")
+
+w3 = get_web3_connection()
 DB_NAME = "blockchain_data.db"
 
-# Format USDT contract and Transfer Topic Hash strictly as lowercase hex strings
+# USDT Contract Address & Transfer Event Signature Topic
 USDT_CONTRACT = w3.to_checksum_address("0xdAC17F958D2ee523a2206206994597C13D831ec7")
-TRANSFER_TOPIC = w3.to_hex(w3.keccak(text="Transfer(address,address,uint256)"))
+TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
+# EARLY FRAUD DETECTION / WHALE ALERT THRESHOLD ($50,000 USD)
+ALERT_THRESHOLD_USD = 50_000.0
+
+
+# ------------------------------------------------------------------
+# 2. ALERT NOTIFICATION SYSTEM
+# ------------------------------------------------------------------
+def trigger_alert(block_num, tx_hash, sender, receiver, amount):
+    """Triggers real-time alerts for high-value or potential fraud transfers."""
+    print("\n" + "🚨" * 22)
+    print(" 🚨 EARLY FRAUD / WHALE ALERT DETECTED 🚨")
+    print("🚨" * 22)
+    print(f"📦 Block Number : #{block_num:,}")
+    print(f"💰 Amount       : ${amount:,.2f} USDT")
+    print(f"📤 From Address : {sender}")
+    print(f"📥 To Address   : {receiver}")
+    print(f"🔗 Tx Hash      : https://etherscan.io/tx/{tx_hash}")
+    print("🚨" * 22 + "\n")
+
+
+# ------------------------------------------------------------------
+# 3. BLOCK PARSER & DATA TRANSFORMER
+# ------------------------------------------------------------------
 def process_block(block_number):
-    """Parses native ETH transactions AND decodes USDT ERC-20 token transfer events."""
     try:
+        # Fetch block with all transaction details
         block = w3.eth.get_block(block_number, full_transactions=True)
         
-        # 1. Parse Native ETH Transactions
+        # A. Parse Base-Layer ETH Transactions
         eth_tx_data = []
         for tx in block.transactions:
             eth_tx_data.append({
@@ -31,64 +72,66 @@ def process_block(block_number):
 
         df_eth = pd.DataFrame(eth_tx_data)
 
-        # 2. Extract USDT ERC-20 Event Logs with explicit Hex Block numbers
-        block_hex = w3.to_hex(block_number)
-        
+        # B. Parse & Decode USDT Smart Contract Logs
         token_tx_data = []
         try:
             logs = w3.eth.get_logs({
-                "fromBlock": block_hex,
-                "toBlock": block_hex,
+                "fromBlock": block_number,
+                "toBlock": block_number,
                 "address": USDT_CONTRACT,
                 "topics": [TRANSFER_TOPIC]
             })
 
             for log in logs:
                 if len(log["topics"]) == 3:
-                    # Decode From & To addresses
-                    from_addr = "0x" + log["topics"][1].hex()[-40:]
-                    to_addr = "0x" + log["topics"][2].hex()[-40:]
+                    from_addr = w3.to_checksum_address("0x" + log["topics"][1].hex()[-40:])
+                    to_addr = w3.to_checksum_address("0x" + log["topics"][2].hex()[-40:])
                     
-                    # Decode amount (USDT uses 6 decimal places)
-                    raw_val = int(log["data"].hex(), 16)
-                    amount_usdt = raw_val / (10 ** 6)
+                    # Decoded amount (USDT uses 6 decimal places)
+                    raw_amount = int(log["data"].hex(), 16)
+                    amount_usdt = raw_amount / (10 ** 6)
+                    tx_hash_hex = log["transactionHash"].hex()
+
+                    # Trigger alert if transaction meets or exceeds $50,000 USD
+                    if amount_usdt >= ALERT_THRESHOLD_USD:
+                        trigger_alert(block_number, tx_hash_hex, from_addr, to_addr, amount_usdt)
 
                     token_tx_data.append({
                         "block_number": block_number,
-                        "tx_hash": log["transactionHash"].hex(),
+                        "tx_hash": tx_hash_hex,
                         "token_symbol": "USDT",
-                        "from_address": w3.to_checksum_address(from_addr),
-                        "to_address": w3.to_checksum_address(to_addr),
+                        "from_address": from_addr,
+                        "to_address": to_addr,
                         "amount": amount_usdt
                     })
         except Exception as log_err:
-            print(f"⚠️ Log query skipped for block #{block_number}: {log_err}")
+            # Fallback if log endpoint rate-limits on a specific block
+            token_tx_data = []
 
         df_tokens = pd.DataFrame(token_tx_data)
 
-        # 3. Stream to SQLite Database
+        # C. Save Streamed Data to SQLite
         conn = sqlite3.connect(DB_NAME)
-        df_eth.to_sql("transactions", conn, if_exists="append", index=False)
-        
+        if not df_eth.empty:
+            df_eth.to_sql("transactions", conn, if_exists="append", index=False)
         if not df_tokens.empty:
             df_tokens.to_sql("token_transfers", conn, if_exists="append", index=False)
-            
         conn.close()
 
-        print(f"✅ [Block #{block.number:,}] Saved {len(df_eth)} ETH Txs & {len(df_tokens)} USDT Transfers!")
+        print(f"✅ [Block #{block.number:,}] Saved {len(df_eth)} ETH Txs & {len(df_tokens)} USDT Transfers")
 
     except Exception as e:
         print(f"⚠️ Error processing block #{block_number}: {e}")
 
-def start_continuous_ingestion():
-    if not w3.is_connected():
-        print("❌ Error: Web3 connection failed.")
-        return
 
+# ------------------------------------------------------------------
+# 4. CONTINUOUS BLOCK LISTENER
+# ------------------------------------------------------------------
+def start_continuous_ingestion():
     print("\n==================================================")
-    print("⚡ MULTI-ASSET ON-CHAIN INGESTION ENGINE")
+    print("⚡ EARLY FRAUD DETECTION & ON-CHAIN ENGINE")
     print("==================================================")
-    print("Streaming Live Ethereum Blocks + USDT Transfers to SQL...\n")
+    print(f"Streaming Mainnet Blocks | Alert Threshold: >= ${ALERT_THRESHOLD_USD:,.2f}\n")
 
     last_processed_block = 0
 
@@ -103,10 +146,10 @@ def start_continuous_ingestion():
             else:
                 time.sleep(12)
         except KeyboardInterrupt:
-            print("\n🛑 Ingestion pipeline stopped.")
+            print("\n🛑 Pipeline stopped by user.")
             break
         except Exception as e:
-            print(f"⚠️ Connection loop error: {e}")
+            print(f"⚠️ Connection dropped, retrying... ({e})")
             time.sleep(5)
 
 if __name__ == "__main__":
