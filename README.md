@@ -9,8 +9,11 @@ An end-to-end data engineering and analytics dashboard designed to monitor block
 
 🔗 **Live Application:** [Launch Enterprise On-Chain Dashboard](https://blockchain-data-engineering-belke6wlwmyrvbkxvsznpd.streamlit.app/)
 <img width="1408" height="709" alt="ECOSYSTEM OVERVIEW" src="https://github.com/user-attachments/assets/5d345815e67b" />
+
 <img width="1423" height="692" alt="ENTITY AND WALLET PROFILER" src="https://github.com/user-attachments/assets/3e176aba563b" />
+
 <img width="1402" height="704" alt="MULTI-HOP MONEY TRAIL TRACER" src="https://github.com/user-attachments/assets/..." />
+
 <img width="1412" height="705" alt="LIVE WHALE THREAT FEED" src="https://github.com/user-attachments/assets/..." />
 
 ## 📌 Project Overview
