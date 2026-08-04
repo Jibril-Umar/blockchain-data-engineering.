@@ -7,7 +7,21 @@
 
 An end-to-end data engineering and analytics dashboard designed to monitor blockchain ecosystem activity, detect high-risk whale transactions, and trace multi-hop Anti-Money Laundering (AML) fund flows.
 
+<img width="1402" height="704" alt="MULTI-HOP MONEY TRAIL TRACER" src="https://github.com/user-attachments/assets/7e7a0959-2935-4419-8c68-7540b271b2e8" />
+
+
+<img width="1412" height="705" alt="LIVE WHALE THREAD FEED" src="https://github.com/user-attachments/assets/45046434-304c-4b47-a866-e36f5a7af57c" />
+
+
+<img width="1408" height="709" alt="ECOSYSTEM OVERVIEW" src="https://github.com/user-attachments/assets/d95d2dd8-2e01-4838-a3cd-9a891dcd7889" />
+
+
+<img width="1423" height="692" alt="ENTITY AND WALLET PROFILER" src="https://github.com/user-attachments/assets/a5adcb74-c902-40f6-ae63-3381d0fe1a79" />
+
+
 🔗 **Live Application:** [Launch Enterprise On-Chain Dashboard](https://blockchain-data-engineering-belke6wlwmyrvbkxvsznpd.streamlit.app/)
+
+
 
 
 ## 📌 Project Overview
