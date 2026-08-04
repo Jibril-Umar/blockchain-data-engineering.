@@ -55,5 +55,5 @@ If you wish to clone and run this project locally:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/jibril-umar/blockchain-data-engineering.git](https://github.com/jibril-umar/blockchain-data-engineering.git)
-   cd blockchain-data-engineering
+   git clone https://github.com/jibril-umar/blockchain-data-engineering.git
+cd blockchain-data-engineering
