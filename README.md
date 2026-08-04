@@ -1,3 +1,7 @@
+<img width="1412" height="705" alt="LIVE WHALE THREAD FEED" src="https://github.com/user-attachments/assets/f511362d-629e-40be-8bef-1d310eed4064" />
+<img width="1402" height="704" alt="MULTI-HOP MONEY TRAIL TRACER" src="https://github.com/user-attachments/assets/fe0cc17b-eeae-46a7-87d6-3e176aba563b" />
+<img width="1423" height="692" alt="ENTITY AND WALLET PROFILER" src="https://github.com/user-attachments/assets/bcd1f88f-1f74-4cfc-8f64-5d345815e67b" />
+<img width="1408" height="709" alt="ECOSYSTEM OVERVIEW" src="https://github.com/user-attachments/assets/e5d546a0-0767-4be5-914c-7e6c63df9c1f" />
 # 🛡️ Enterprise On-Chain Intelligence & AML Trail Engine
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blockchain-data-engineering-belke6wlwmyrvbkxvsznpd.streamlit.app/)
